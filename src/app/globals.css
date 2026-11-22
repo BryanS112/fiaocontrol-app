@@ -1,25 +1,27 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f8fafc;
+  --background: #f1f5f9;
   --foreground: #0f172a;
   --surface: #ffffff;
-  --surface-muted: #f1f5f9;
-  --border-subtle: #e2e8f0;
-  --text-muted: #475569;
+  --surface-muted: #f8fafc;
+  --border-subtle: rgba(226, 232, 240, 0.85);
+  --text-muted: #64748b;
   --accent-emerald: #059669;
   --accent-amber: #d97706;
   --accent-coral: #e11d48;
+  --card-shadow: 0 2px 10px -3px rgba(15, 23, 42, 0.07), 0 1px 3px -1px rgba(15, 23, 42, 0.04);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #09090b;
     --foreground: #fafafa;
-    --surface: #18181b;
-    --surface-muted: #27272a;
+    --surface: #121215;
+    --surface-muted: #1e1e24;
     --border-subtle: #27272a;
     --text-muted: #a1a1aa;
+    --card-shadow: 0 2px 12px -3px rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -47,6 +49,7 @@ body {
 .pos-card {
   background-color: var(--surface);
   border: 1px solid var(--border-subtle);
+  box-shadow: var(--card-shadow);
 }
 
 .tabular-nums {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   actualizarProducto,
   cargarDatosDemoColombia,
@@ -23,6 +23,7 @@ import {
 import type {
   AbonoFiado,
   ClienteFiado,
+  ItemVenta,
   MetodoAbono,
   PosSection,
   Producto,
@@ -45,6 +46,7 @@ export function AppShell() {
   const [clientes, setClientes] = useState<ClienteFiado[]>([]);
   const [ventas, setVentas] = useState<Venta[]>([]);
   const [abonos, setAbonos] = useState<AbonoFiado[]>([]);
+  const [carrito, setCarrito] = useState<ItemVenta[]>([]);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -179,6 +181,10 @@ export function AppShell() {
 
   const stockBajoCount = productos.filter((p) => p.stock <= p.stockMinimo).length;
   const fiaosActivosCount = clientes.filter((c) => c.saldoDeuda > 0).length;
+  const totalUnidadesCarrito = useMemo(
+    () => carrito.reduce((acc, item) => acc + item.cantidad, 0),
+    [carrito]
+  );
 
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
@@ -196,17 +202,20 @@ export function AppShell() {
           activeSection={activeSection}
           onSelectSection={setActiveSection}
           badges={{
+            caja: totalUnidadesCarrito,
             inventario: stockBajoCount,
             fiaos: fiaosActivosCount,
           }}
         />
 
-        <main className="min-w-0 flex-1 px-3 py-4 pb-36 sm:px-6 md:pb-8">
+        <main className="min-w-0 flex-1 px-3 py-4 pb-40 sm:px-6 md:pb-8">
           {activeSection === "caja" && (
             <CajaView
               nombreTienda={nombreTienda}
               productos={productos}
               clientes={clientes}
+              carrito={carrito}
+              onChangeCarrito={setCarrito}
               onRegistrarVenta={handleRegistrarVenta}
               onCargarDemo={handleCargarDemo}
               onNotify={notify}

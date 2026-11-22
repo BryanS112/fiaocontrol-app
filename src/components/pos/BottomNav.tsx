@@ -15,7 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: "caja",
     label: "Caja",
-    description: "Registrar ventas rápidas",
+    description: "Cobro rápido",
     icon: ShoppingBag,
   },
   {
@@ -27,13 +27,13 @@ const NAV_ITEMS: NavItem[] = [
   {
     id: "inventario",
     label: "Inventario",
-    description: "Productos y stock",
+    description: "Catálogo y stock",
     icon: Package,
   },
   {
     id: "resumen",
     label: "Resumen",
-    description: "Cierre y métricas",
+    description: "Cierre diario",
     icon: BarChart3,
   },
 ];
@@ -54,9 +54,9 @@ export function BottomNav({
       {/* Barra lateral limpia en escritorio */}
       <aside
         aria-label="Navegación principal"
-        className="hidden md:flex md:w-60 md:shrink-0 md:flex-col md:border-r md:border-border-subtle md:bg-surface"
+        className="hidden md:flex md:w-64 md:shrink-0 md:flex-col md:border-r md:border-border-subtle md:bg-surface"
       >
-        <nav className="flex flex-col gap-1 p-3">
+        <nav className="flex flex-col gap-1.5 p-3">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
@@ -68,20 +68,20 @@ export function BottomNav({
                 type="button"
                 onClick={() => onSelectSection(item.id)}
                 aria-current={isActive ? "page" : undefined}
-                className={`flex min-h-[48px] w-full items-center justify-between rounded-lg px-3 py-2 text-left transition-colors ${
+                className={`flex min-h-[50px] w-full items-center justify-between rounded-xl px-3.5 py-2 text-left transition-all active:scale-[0.98] ${
                   isActive
-                    ? "bg-emerald-pos text-white"
+                    ? "bg-emerald-pos text-white shadow-sm shadow-emerald-pos/25"
                     : "text-foreground hover:bg-surface-muted"
                 }`}
               >
                 <span className="flex items-center gap-3">
                   <Icon className="h-5 w-5 shrink-0" aria-hidden="true" />
                   <span>
-                    <span className="block text-sm font-semibold leading-tight">
+                    <span className="block text-sm font-bold leading-tight">
                       {item.label}
                     </span>
                     <span
-                      className={`block text-xs leading-tight ${
+                      className={`block text-[11px] leading-tight ${
                         isActive ? "text-white/85" : "text-text-muted"
                       }`}
                     >
@@ -92,10 +92,12 @@ export function BottomNav({
 
                 {typeof badge === "number" && badge > 0 ? (
                   <span
-                    className={`tabular-nums rounded-md px-1.5 py-0.5 text-xs font-semibold ${
+                    className={`tabular-nums rounded-full px-2 py-0.5 text-xs font-bold ${
                       isActive
                         ? "bg-white/20 text-white"
-                        : "bg-surface-muted text-foreground"
+                        : item.id === "caja"
+                          ? "bg-emerald-pos text-white"
+                          : "bg-surface-muted text-foreground"
                     }`}
                   >
                     {badge}
@@ -107,17 +109,17 @@ export function BottomNav({
         </nav>
 
         <div className="mt-auto border-t border-border-subtle p-4 text-xs text-text-muted">
-          <p className="font-semibold text-foreground">FiaoControl POS</p>
-          <p className="mt-0.5">Sprint 1 · Persistencia local</p>
+          <p className="font-bold text-foreground">FiaoControl POS</p>
+          <p className="mt-0.5">Modo local · Pesos COP</p>
         </div>
       </aside>
 
-      {/* Barra inferior fija en móvil (botones táctiles >= 48px) */}
-      <nav
-        aria-label="Navegación inferior"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-border-subtle bg-surface md:hidden"
-      >
-        <div className="grid grid-cols-4">
+      {/* Barra flotante moderna con efecto cristal en móvil */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-3 pb-3 md:hidden">
+        <nav
+          aria-label="Navegación inferior"
+          className="pointer-events-auto mx-auto grid max-w-md grid-cols-4 rounded-2xl border border-border-subtle bg-white/85 p-1.5 shadow-lg backdrop-blur-xl dark:bg-zinc-950/85"
+        >
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
@@ -129,34 +131,34 @@ export function BottomNav({
                 type="button"
                 onClick={() => onSelectSection(item.id)}
                 aria-current={isActive ? "page" : undefined}
-                className={`relative flex min-h-[56px] flex-col items-center justify-center gap-1 px-1 py-2 text-xs font-medium transition-colors ${
+                className={`relative flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-semibold transition-all active:scale-[0.98] ${
                   isActive
-                    ? "text-emerald-pos"
+                    ? "bg-emerald-pos/12 text-emerald-pos"
                     : "text-text-muted hover:text-foreground"
                 }`}
               >
-                {isActive ? (
-                  <span
-                    aria-hidden="true"
-                    className="absolute top-0 h-0.5 w-10 bg-emerald-pos"
-                  />
-                ) : null}
                 <div className="relative">
                   <Icon className="h-5 w-5" aria-hidden="true" />
                   {typeof badge === "number" && badge > 0 ? (
-                    <span className="tabular-nums absolute -top-1.5 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-pos px-1 text-[10px] font-bold text-white">
+                    <span
+                      className={`tabular-nums absolute -top-1.5 -right-2.5 flex h-4 min-w-[16px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white ${
+                        item.id === "caja"
+                          ? "bg-emerald-pos"
+                          : item.id === "fiaos"
+                            ? "bg-coral-pos"
+                            : "bg-amber-pos"
+                      }`}
+                    >
                       {badge}
                     </span>
                   ) : null}
                 </div>
-                <span className={isActive ? "font-semibold" : ""}>
-                  {item.label}
-                </span>
+                <span className={isActive ? "font-bold" : ""}>{item.label}</span>
               </button>
             );
           })}
-        </div>
-      </nav>
+        </nav>
+      </div>
     </>
   );
 }

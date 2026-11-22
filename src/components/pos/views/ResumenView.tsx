@@ -1,7 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownLeft, BarChart3, Calendar, Database, Receipt } from "lucide-react";
+import {
+  ArrowDownLeft,
+  Banknote,
+  BarChart3,
+  BookUser,
+  Calendar,
+  Database,
+  Receipt,
+  Smartphone,
+  TrendingUp,
+} from "lucide-react";
 import { formatCOP, formatFechaHora, formatHora } from "@/lib/formatters";
 import type { AbonoFiado, ClienteFiado, Producto, Venta } from "@/types/pos";
 
@@ -100,12 +110,30 @@ export function ResumenView({
       return accVenta + gananciaItems;
     }, 0);
 
+    const baseDistribucion = dineroEfectivo + transferencias + nuevoFiado;
+    const pctEfectivo =
+      baseDistribucion > 0
+        ? Math.round((dineroEfectivo / baseDistribucion) * 100)
+        : 0;
+    const pctTransferencias =
+      baseDistribucion > 0
+        ? Math.round((transferencias / baseDistribucion) * 100)
+        : 0;
+    const pctFiado =
+      baseDistribucion > 0
+        ? Math.max(0, 100 - pctEfectivo - pctTransferencias)
+        : 0;
+
     return {
       ventasTotales,
       dineroEfectivo,
       transferencias,
       nuevoFiado,
       gananciaNeta,
+      baseDistribucion,
+      pctEfectivo,
+      pctTransferencias,
+      pctFiado,
     };
   }, [ventasFiltradas, abonosFiltrados, productos]);
 
@@ -152,10 +180,10 @@ export function ResumenView({
     <section aria-labelledby="resumen-heading" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="resumen-heading" className="text-lg font-bold tracking-tight text-foreground">
+          <h2 id="resumen-heading" className="text-lg font-extrabold tracking-tight text-foreground">
             Cierre de caja y ganancia
           </h2>
-          <p className="text-sm text-text-muted">
+          <p className="text-xs font-medium text-text-muted sm:text-sm">
             {verTodo
               ? "Mostrando todo el historial acumulado."
               : fechaFiltro === hoy
@@ -168,7 +196,7 @@ export function ResumenView({
         <div className="flex items-center gap-2">
           <div className="relative">
             <Calendar
-              className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-text-muted"
+              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted"
               aria-hidden="true"
             />
             <input
@@ -179,17 +207,17 @@ export function ResumenView({
                 setFechaFiltro(e.target.value || hoy);
               }}
               aria-label="Filtrar cierre por fecha"
-              className="h-10 rounded-lg border border-border-subtle bg-surface pr-2.5 pl-8 text-xs font-semibold text-foreground outline-none focus:border-emerald-pos"
+              className="pos-card h-10 rounded-xl pr-3 pl-9 text-xs font-bold text-foreground outline-none focus:border-emerald-pos"
             />
           </div>
 
           <button
             type="button"
             onClick={() => setVerTodo((prev) => !prev)}
-            className={`min-h-[40px] rounded-lg border px-3 text-xs font-semibold transition-colors ${
+            className={`min-h-[40px] rounded-xl border px-3.5 text-xs font-bold transition-all active:scale-[0.98] ${
               verTodo
-                ? "border-emerald-pos bg-emerald-pos text-white"
-                : "border-border-subtle bg-surface text-foreground hover:bg-surface-muted"
+                ? "border-emerald-600 bg-emerald-600 text-white"
+                : "pos-card text-foreground hover:bg-surface-muted"
             }`}
           >
             {verTodo ? "Solo hoy" : "Ver todo"}
@@ -197,26 +225,88 @@ export function ResumenView({
         </div>
       </div>
 
-      {/* Tarjetas de cierre */}
+      {/* Barra visual comparativa de distribución de ingresos */}
+      <div className="pos-card rounded-2xl p-4">
+        <div className="mb-2.5 flex items-center justify-between">
+          <span className="text-xs font-bold uppercase tracking-wider text-text-muted">
+            Distribución de ingresos
+          </span>
+          <span className="tabular-nums text-xs font-bold text-foreground">
+            {formatCOP(metricas.baseDistribucion)}
+          </span>
+        </div>
+
+        {metricas.baseDistribucion === 0 ? (
+          <div className="h-3 w-full rounded-full bg-surface-muted" />
+        ) : (
+          <div className="flex h-3 w-full overflow-hidden rounded-full bg-surface-muted">
+            {metricas.pctEfectivo > 0 ? (
+              <div
+                style={{ width: `${metricas.pctEfectivo}%` }}
+                className="bg-emerald-500 transition-all"
+                title={`Efectivo: ${metricas.pctEfectivo}%`}
+              />
+            ) : null}
+            {metricas.pctTransferencias > 0 ? (
+              <div
+                style={{ width: `${metricas.pctTransferencias}%` }}
+                className="bg-sky-500 transition-all"
+                title={`Transferencias: ${metricas.pctTransferencias}%`}
+              />
+            ) : null}
+            {metricas.pctFiado > 0 ? (
+              <div
+                style={{ width: `${metricas.pctFiado}%` }}
+                className="bg-amber-500 transition-all"
+                title={`Fiado: ${metricas.pctFiado}%`}
+              />
+            ) : null}
+          </div>
+        )}
+
+        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs">
+          <span className="inline-flex items-center gap-1.5 text-text-muted">
+            <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+            Efectivo <strong className="tabular-nums text-foreground">{metricas.pctEfectivo}%</strong>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-text-muted">
+            <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
+            Nequi / Daviplata{" "}
+            <strong className="tabular-nums text-foreground">{metricas.pctTransferencias}%</strong>
+          </span>
+          <span className="inline-flex items-center gap-1.5 text-text-muted">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-500" />
+            Fiado <strong className="tabular-nums text-foreground">{metricas.pctFiado}%</strong>
+          </span>
+        </div>
+      </div>
+
+      {/* Tarjetas KPI con contenedores suaves de iconos */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <div className="pos-card rounded-xl p-4">
-          <span className="text-xs font-medium text-text-muted">
+        <div className="pos-card rounded-2xl p-4">
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-slate-500/10 text-slate-700 dark:text-zinc-300">
+            <Receipt className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <span className="text-xs font-semibold text-text-muted">
             Ventas totales
           </span>
-          <p className="tabular-nums mt-1 text-xl font-bold text-foreground">
+          <p className="tabular-nums mt-0.5 text-xl font-extrabold tracking-tight text-foreground">
             {formatCOP(metricas.ventasTotales)}
           </p>
-          <span className="tabular-nums mt-1 block text-xs text-text-muted">
+          <span className="tabular-nums mt-1 block text-[11px] text-text-muted">
             {ventasFiltradas.length}{" "}
             {ventasFiltradas.length === 1 ? "venta" : "ventas"}
           </span>
         </div>
 
-        <div className="pos-card rounded-xl p-4">
-          <span className="text-xs font-medium text-text-muted">
+        <div className="pos-card rounded-2xl p-4">
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <Banknote className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <span className="text-xs font-semibold text-text-muted">
             Dinero en efectivo
           </span>
-          <p className="tabular-nums mt-1 text-xl font-bold text-emerald-pos">
+          <p className="tabular-nums mt-0.5 text-xl font-extrabold tracking-tight text-emerald-pos">
             {formatCOP(metricas.dineroEfectivo)}
           </p>
           <span className="mt-1 block text-[11px] text-text-muted">
@@ -224,11 +314,14 @@ export function ResumenView({
           </span>
         </div>
 
-        <div className="pos-card rounded-xl p-4">
-          <span className="text-xs font-medium text-text-muted">
+        <div className="pos-card rounded-2xl p-4">
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:text-sky-400">
+            <Smartphone className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <span className="text-xs font-semibold text-text-muted">
             Nequi / Daviplata
           </span>
-          <p className="tabular-nums mt-1 text-xl font-bold text-foreground">
+          <p className="tabular-nums mt-0.5 text-xl font-extrabold tracking-tight text-foreground">
             {formatCOP(metricas.transferencias)}
           </p>
           <span className="mt-1 block text-[11px] text-text-muted">
@@ -236,11 +329,14 @@ export function ResumenView({
           </span>
         </div>
 
-        <div className="pos-card rounded-xl p-4">
-          <span className="text-xs font-medium text-text-muted">
-            Nuevo fiado otorgado
+        <div className="pos-card rounded-2xl p-4">
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+            <BookUser className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <span className="text-xs font-semibold text-text-muted">
+            Nuevo fiado hoy
           </span>
-          <p className="tabular-nums mt-1 text-xl font-bold text-coral-pos">
+          <p className="tabular-nums mt-0.5 text-xl font-extrabold tracking-tight text-coral-pos">
             {formatCOP(metricas.nuevoFiado)}
           </p>
           <span className="mt-1 block text-[11px] text-text-muted">
@@ -248,11 +344,14 @@ export function ResumenView({
           </span>
         </div>
 
-        <div className="pos-card col-span-2 rounded-xl p-4 lg:col-span-1">
-          <span className="text-xs font-medium text-text-muted">
+        <div className="pos-card col-span-2 rounded-2xl p-4 lg:col-span-1">
+          <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+            <TrendingUp className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <span className="text-xs font-semibold text-text-muted">
             Ganancia neta est.
           </span>
-          <p className="tabular-nums mt-1 text-xl font-bold text-emerald-pos">
+          <p className="tabular-nums mt-0.5 text-xl font-extrabold tracking-tight text-emerald-pos">
             {formatCOP(metricas.gananciaNeta)}
           </p>
           <span className="mt-1 block text-[11px] text-text-muted">
@@ -262,7 +361,7 @@ export function ResumenView({
       </div>
 
       {/* Historial cronológico */}
-      <div className="pos-card rounded-xl p-4">
+      <div className="pos-card rounded-2xl p-4">
         <div className="mb-3 flex items-center justify-between">
           <h3 className="text-sm font-bold text-foreground">
             Historial cronológico ({historialCronologico.length})
@@ -271,10 +370,10 @@ export function ResumenView({
 
         {historialCronologico.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-6 text-center">
-            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-surface-muted text-text-muted">
-              <BarChart3 className="h-5 w-5" aria-hidden="true" />
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-pos">
+              <BarChart3 className="h-6 w-6" aria-hidden="true" />
             </div>
-            <p className="text-sm font-semibold text-foreground">
+            <p className="text-sm font-bold text-foreground">
               Sin movimientos registrados
             </p>
             <p className="mt-1 max-w-sm text-xs text-text-muted">
@@ -286,7 +385,7 @@ export function ResumenView({
               <button
                 type="button"
                 onClick={onCargarDemo}
-                className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-pos px-4 text-sm font-bold text-white transition-opacity hover:opacity-95 active:scale-[0.98]"
+                className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-600 px-5 text-sm font-bold text-white shadow-sm shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.98]"
               >
                 <Database className="h-4 w-4" aria-hidden="true" />
                 Cargar datos de prueba
@@ -302,9 +401,9 @@ export function ResumenView({
               >
                 <div className="flex min-w-0 items-center gap-3">
                   <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
                       mov.kind === "abono"
-                        ? "bg-emerald-pos/15 text-emerald-pos"
+                        ? "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
                         : "bg-surface-muted text-text-muted"
                     }`}
                   >
@@ -315,12 +414,12 @@ export function ResumenView({
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-foreground">
+                    <p className="truncate text-sm font-semibold text-foreground">
                       {mov.titulo}
                     </p>
                     <p className="text-xs text-text-muted">
                       {verTodo ? formatFechaHora(mov.fecha) : formatHora(mov.fecha)} ·{" "}
-                      <span className="font-medium text-foreground">
+                      <span className="font-semibold text-foreground">
                         {mov.metodoPago}
                       </span>
                     </p>
@@ -328,7 +427,7 @@ export function ResumenView({
                 </div>
 
                 <span
-                  className={`tabular-nums shrink-0 text-sm font-bold ${
+                  className={`tabular-nums shrink-0 text-sm font-extrabold ${
                     mov.esFiado ? "text-coral-pos" : "text-emerald-pos"
                   }`}
                 >

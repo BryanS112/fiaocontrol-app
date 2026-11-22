@@ -4,10 +4,12 @@ import { useMemo, useState } from "react";
 import {
   AlertTriangle,
   Database,
+  Layers,
   Package,
   Pencil,
   Plus,
   Search,
+  Wallet,
   X,
 } from "lucide-react";
 import { formatCOP } from "@/lib/formatters";
@@ -157,64 +159,85 @@ export function InventarioView({
     <section aria-labelledby="inventario-heading" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 id="inventario-heading" className="text-lg font-bold tracking-tight text-foreground">
+          <h2 id="inventario-heading" className="text-lg font-extrabold tracking-tight text-foreground">
             Inventario y alertas
           </h2>
-          <p className="text-sm text-text-muted">
-            Precios en COP, márgenes y reposición rápida de stock.
+          <p className="text-xs font-medium text-text-muted sm:text-sm">
+            Niveles de stock, márgenes y reposición rápida.
           </p>
         </div>
 
         <button
           type="button"
           onClick={abrirNuevoProducto}
-          className="inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-pos px-4 text-sm font-bold text-white transition-opacity hover:opacity-95"
+          className="inline-flex min-h-[46px] items-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-bold text-white shadow-sm shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.98]"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Nuevo Producto
         </button>
       </div>
 
-      {/* Contadores superiores */}
-      <div className="grid grid-cols-3 gap-2.5">
-        <div className="pos-card rounded-xl p-3.5">
-          <span className="block text-[11px] font-medium uppercase tracking-wide text-text-muted">
-            Total productos
-          </span>
-          <p className="tabular-nums mt-1 text-xl font-bold text-foreground">
-            {productos.length}
-          </p>
+      {/* Contadores KPI superiores */}
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="pos-card flex items-center gap-3 rounded-2xl p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/12 text-sky-600 dark:text-sky-400">
+            <Layers className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+              Total productos
+            </span>
+            <p className="tabular-nums text-xl font-extrabold text-foreground">
+              {productos.length}
+            </p>
+          </div>
         </div>
 
-        <div className="pos-card rounded-xl p-3.5">
-          <span className="block text-[11px] font-medium uppercase tracking-wide text-text-muted">
-            Valor (costo)
-          </span>
-          <p className="tabular-nums mt-1 text-lg font-bold text-foreground sm:text-xl">
-            {formatCOP(valorInventarioCosto)}
-          </p>
+        <div className="pos-card flex items-center gap-3 rounded-2xl p-4">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 text-emerald-600 dark:text-emerald-400">
+            <Wallet className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+              Valor (costo)
+            </span>
+            <p className="tabular-nums text-xl font-extrabold text-foreground">
+              {formatCOP(valorInventarioCosto)}
+            </p>
+          </div>
         </div>
 
-        <div className="pos-card rounded-xl p-3.5">
-          <span className="block text-[11px] font-medium uppercase tracking-wide text-text-muted">
-            Por agotarse
-          </span>
-          <p
-            className={`tabular-nums mt-1 text-xl font-bold ${
-              productosStockBajo.length > 0 ? "text-amber-pos" : "text-emerald-pos"
+        <div className="pos-card flex items-center gap-3 rounded-2xl p-4">
+          <div
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+              productosStockBajo.length > 0
+                ? "bg-amber-500/12 text-amber-600 dark:text-amber-400"
+                : "bg-emerald-500/12 text-emerald-600 dark:text-emerald-400"
             }`}
           >
-            {productosStockBajo.length}
-          </p>
+            <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+          </div>
+          <div>
+            <span className="block text-[11px] font-semibold uppercase tracking-wide text-text-muted">
+              Por agotarse
+            </span>
+            <p
+              className={`tabular-nums text-xl font-extrabold ${
+                productosStockBajo.length > 0 ? "text-amber-pos" : "text-emerald-pos"
+              }`}
+            >
+              {productosStockBajo.length}
+            </p>
+          </div>
         </div>
       </div>
 
       {productos.length === 0 ? (
-        <div className="pos-card flex flex-col items-center justify-center rounded-xl p-8 text-center">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-surface-muted text-text-muted">
+        <div className="pos-card flex flex-col items-center justify-center rounded-2xl p-8 text-center">
+          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-pos">
             <Package className="h-6 w-6" aria-hidden="true" />
           </div>
-          <h3 className="text-base font-semibold text-foreground">
+          <h3 className="text-base font-bold text-foreground">
             Inventario vacío
           </h3>
           <p className="mt-1 max-w-sm text-sm text-text-muted">
@@ -223,7 +246,7 @@ export function InventarioView({
           <button
             type="button"
             onClick={onCargarDemo}
-            className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-lg bg-emerald-pos px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-95"
+            className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-sm shadow-emerald-600/20 transition-all hover:bg-emerald-500 active:scale-[0.98]"
           >
             <Database className="h-4 w-4" aria-hidden="true" />
             Cargar datos de prueba
@@ -235,7 +258,7 @@ export function InventarioView({
           <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center sm:justify-between">
             <div className="relative flex-1">
               <Search
-                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-text-muted"
+                className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-text-muted"
                 aria-hidden="true"
               />
               <input
@@ -244,7 +267,7 @@ export function InventarioView({
                 onChange={(e) => setBusqueda(e.target.value)}
                 placeholder="Buscar en inventario..."
                 aria-label="Buscar en inventario"
-                className="h-11 w-full rounded-xl border border-border-subtle bg-surface pr-4 pl-9 text-sm text-foreground outline-none focus:border-emerald-pos"
+                className="pos-card h-11 w-full rounded-xl pr-4 pl-10 text-sm font-medium text-foreground outline-none focus:border-emerald-pos"
               />
             </div>
 
@@ -253,10 +276,10 @@ export function InventarioView({
               role="switch"
               aria-checked={soloAgotarse}
               onClick={() => setSoloAgotarse((prev) => !prev)}
-              className={`inline-flex min-h-[44px] shrink-0 items-center justify-between gap-2.5 rounded-xl border px-3.5 text-xs font-semibold transition-colors ${
+              className={`inline-flex min-h-[44px] shrink-0 items-center justify-between gap-2.5 rounded-xl border px-3.5 text-xs font-bold transition-all active:scale-[0.98] ${
                 soloAgotarse
-                  ? "border-amber-pos bg-amber-pos/15 text-amber-pos"
-                  : "border-border-subtle bg-surface text-foreground hover:bg-surface-muted"
+                  ? "border-amber-pos bg-amber-500/12 text-amber-pos"
+                  : "pos-card text-foreground hover:bg-surface-muted"
               }`}
             >
               <span className="inline-flex items-center gap-1.5">
@@ -265,7 +288,7 @@ export function InventarioView({
               </span>
               <span
                 className={`inline-block h-4 w-7 rounded-full p-0.5 transition-colors ${
-                  soloAgotarse ? "bg-amber-pos" : "bg-surface-muted"
+                  soloAgotarse ? "bg-amber-pos" : "bg-slate-300 dark:bg-zinc-700"
                 }`}
               >
                 <span
@@ -277,25 +300,32 @@ export function InventarioView({
             </button>
           </div>
 
-          {/* Lista de productos */}
+          {/* Catálogo con barras visuales de capacidad de stock */}
           {productosFiltrados.length === 0 ? (
-            <div className="pos-card rounded-xl p-6 text-center text-sm text-text-muted">
+            <div className="pos-card rounded-2xl p-6 text-center text-sm text-text-muted">
               {soloAgotarse
                 ? "Excelente: no tienes productos por agotarse."
                 : "No hay productos que coincidan con tu búsqueda."}
             </div>
           ) : (
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {productosFiltrados.map((producto) => {
                 const agotado = producto.stock === 0;
-                const stockBajo = producto.stock <= producto.stockMinimo;
+                const stockBajo = !agotado && producto.stock <= producto.stockMinimo;
                 const margen = producto.precioVenta - producto.costo;
 
+                // Capacidad visual respecto a 3x stock mínimo (mínimo referencia 15)
+                const referenciaCapacidad = Math.max(15, producto.stockMinimo * 3);
+                const porcentajeStock = Math.min(
+                  100,
+                  Math.round((producto.stock / referenciaCapacidad) * 100)
+                );
+
                 return (
-                  <div key={producto.id} className="pos-card rounded-xl p-4">
+                  <div key={producto.id} className="pos-card rounded-2xl p-4">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <span className="text-[11px] font-medium uppercase tracking-wide text-text-muted">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-text-muted">
                           {producto.categoria}
                         </span>
                         <h3 className="text-sm font-bold text-foreground sm:text-base">
@@ -304,41 +334,62 @@ export function InventarioView({
                         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-text-muted">
                           <span className="tabular-nums">
                             Venta:{" "}
-                            <strong className="text-foreground">
+                            <strong className="font-bold text-foreground">
                               {formatCOP(producto.precioVenta)}
                             </strong>
                           </span>
                           <span className="tabular-nums">
                             Costo: {formatCOP(producto.costo)}
                           </span>
-                          <span className="tabular-nums text-emerald-pos">
+                          <span className="tabular-nums font-semibold text-emerald-pos">
                             Margen: {formatCOP(margen)}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`tabular-nums inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold ${
-                            agotado
-                              ? "bg-coral-pos/15 text-coral-pos"
-                              : stockBajo
-                                ? "bg-amber-pos/15 text-amber-pos"
-                                : "bg-surface-muted text-foreground"
-                          }`}
-                        >
-                          {stockBajo ? (
-                            <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-                          ) : null}
-                          Stock: {producto.stock} / mín {producto.stockMinimo}
+                      <span
+                        className={`tabular-nums inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${
+                          agotado
+                            ? "bg-coral-pos/12 text-coral-pos"
+                            : stockBajo
+                              ? "bg-amber-500/12 text-amber-pos"
+                              : "bg-emerald-500/12 text-emerald-pos"
+                        }`}
+                      >
+                        {agotado
+                          ? "Agotado"
+                          : stockBajo
+                            ? `Bajo · ${producto.stock} uds`
+                            : `${producto.stock} uds`}
+                      </span>
+                    </div>
+
+                    {/* Barra visual de capacidad de stock */}
+                    <div className="mt-3">
+                      <div className="mb-1 flex justify-between text-[11px] font-medium text-text-muted">
+                        <span>Nivel de inventario</span>
+                        <span className="tabular-nums">
+                          Mínimo recomendado: {producto.stockMinimo}
                         </span>
+                      </div>
+                      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-muted">
+                        <div
+                          className={`h-full rounded-full transition-all ${
+                            agotado
+                              ? "bg-coral-pos"
+                              : stockBajo
+                                ? "bg-amber-pos"
+                                : "bg-emerald-pos"
+                          }`}
+                          style={{ width: `${agotado ? 4 : porcentajeStock}%` }}
+                        />
                       </div>
                     </div>
 
                     {/* Acciones rápidas de reposición y edición */}
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-3">
+                    <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-border-subtle pt-3">
                       <div className="flex items-center gap-1.5">
-                        <span className="mr-1 text-xs font-medium text-text-muted">
+                        <span className="mr-1 text-xs font-semibold text-text-muted">
                           Reponer:
                         </span>
                         {[1, 5, 10].map((qty) => (
@@ -346,7 +397,7 @@ export function InventarioView({
                             key={qty}
                             type="button"
                             onClick={() => handleReposicionRapida(producto, qty)}
-                            className="tabular-nums min-h-[38px] rounded-lg border border-border-subtle bg-background px-2.5 text-xs font-bold text-foreground hover:border-emerald-pos hover:text-emerald-pos"
+                            className="tabular-nums min-h-[36px] rounded-full border border-border-subtle bg-surface-muted px-3 text-xs font-bold text-foreground transition-colors hover:border-emerald-pos hover:text-emerald-pos active:scale-[0.96]"
                           >
                             +{qty}
                           </button>
@@ -356,7 +407,7 @@ export function InventarioView({
                       <button
                         type="button"
                         onClick={() => abrirEditarProducto(producto)}
-                        className="inline-flex min-h-[38px] items-center gap-1.5 rounded-lg border border-border-subtle bg-background px-3 text-xs font-semibold text-foreground hover:bg-surface-muted"
+                        className="inline-flex min-h-[36px] items-center gap-1.5 rounded-full border border-border-subtle bg-surface-muted px-3.5 text-xs font-bold text-foreground transition-colors hover:bg-surface active:scale-[0.97]"
                       >
                         <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
                         Editar
@@ -376,18 +427,18 @@ export function InventarioView({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-producto-title"
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 p-4 backdrop-blur-[2px]"
         >
-          <div className="pos-card w-full max-w-md rounded-2xl p-5">
+          <div className="pos-card w-full max-w-md rounded-3xl p-5">
             <div className="flex items-center justify-between border-b border-border-subtle pb-3">
-              <h3 id="modal-producto-title" className="text-base font-bold text-foreground">
+              <h3 id="modal-producto-title" className="text-base font-extrabold text-foreground">
                 {editingId ? "Editar producto" : "Nuevo producto"}
               </h3>
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
                 aria-label="Cerrar modal"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-text-muted hover:bg-surface-muted"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -395,7 +446,7 @@ export function InventarioView({
 
             <form onSubmit={handleGuardarProducto} className="mt-4 space-y-3">
               <div>
-                <label htmlFor="prod-nombre" className="mb-1 block text-xs font-semibold text-foreground">
+                <label htmlFor="prod-nombre" className="mb-1 block text-xs font-bold text-foreground">
                   Nombre del producto
                 </label>
                 <input
@@ -405,19 +456,19 @@ export function InventarioView({
                   value={form.nombre}
                   onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                   placeholder="Ej: Arroz Diana x 1 kg"
-                  className="h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm text-foreground outline-none focus:border-emerald-pos"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-muted px-3 text-sm text-foreground outline-none focus:border-emerald-pos"
                 />
               </div>
 
               <div>
-                <label htmlFor="prod-categoria" className="mb-1 block text-xs font-semibold text-foreground">
+                <label htmlFor="prod-categoria" className="mb-1 block text-xs font-bold text-foreground">
                   Categoría
                 </label>
                 <select
                   id="prod-categoria"
                   value={form.categoria}
                   onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-                  className="h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm text-foreground outline-none focus:border-emerald-pos"
+                  className="h-11 w-full rounded-xl border border-border-subtle bg-surface-muted px-3 text-sm text-foreground outline-none focus:border-emerald-pos"
                 >
                   {CATEGORIAS_SUGERIDAS.map((cat) => (
                     <option key={cat} value={cat}>
@@ -429,7 +480,7 @@ export function InventarioView({
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label htmlFor="prod-venta" className="mb-1 block text-xs font-semibold text-foreground">
+                  <label htmlFor="prod-venta" className="mb-1 block text-xs font-bold text-foreground">
                     Precio venta (COP)
                   </label>
                   <input
@@ -440,12 +491,12 @@ export function InventarioView({
                     min={50}
                     value={form.precioVenta}
                     onChange={(e) => setForm({ ...form, precioVenta: e.target.value })}
-                    className="tabular-nums h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-emerald-pos"
+                    className="tabular-nums h-11 w-full rounded-xl border border-border-subtle bg-surface-muted px-3 text-sm font-bold text-foreground outline-none focus:border-emerald-pos"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="prod-costo" className="mb-1 block text-xs font-semibold text-foreground">
+                  <label htmlFor="prod-costo" className="mb-1 block text-xs font-bold text-foreground">
                     Costo (COP)
                   </label>
                   <input
@@ -456,14 +507,14 @@ export function InventarioView({
                     min={0}
                     value={form.costo}
                     onChange={(e) => setForm({ ...form, costo: e.target.value })}
-                    className="tabular-nums h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-emerald-pos"
+                    className="tabular-nums h-11 w-full rounded-xl border border-border-subtle bg-surface-muted px-3 text-sm font-bold text-foreground outline-none focus:border-emerald-pos"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label htmlFor="prod-stock" className="mb-1 block text-xs font-semibold text-foreground">
+                  <label htmlFor="prod-stock" className="mb-1 block text-xs font-bold text-foreground">
                     Stock actual
                   </label>
                   <input
@@ -474,12 +525,12 @@ export function InventarioView({
                     min={0}
                     value={form.stock}
                     onChange={(e) => setForm({ ...form, stock: e.target.value })}
-                    className="tabular-nums h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-emerald-pos"
+                    className="tabular-nums h-11 w-full rounded-xl border border-border-subtle bg-surface-muted px-3 text-sm font-bold text-foreground outline-none focus:border-emerald-pos"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="prod-min" className="mb-1 block text-xs font-semibold text-foreground">
+                  <label htmlFor="prod-min" className="mb-1 block text-xs font-bold text-foreground">
                     Stock mínimo
                   </label>
                   <input
@@ -490,7 +541,7 @@ export function InventarioView({
                     min={0}
                     value={form.stockMinimo}
                     onChange={(e) => setForm({ ...form, stockMinimo: e.target.value })}
-                    className="tabular-nums h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm font-semibold text-foreground outline-none focus:border-emerald-pos"
+                    className="tabular-nums h-11 w-full rounded-xl border border-border-subtle bg-surface-muted px-3 text-sm font-bold text-foreground outline-none focus:border-emerald-pos"
                   />
                 </div>
               </div>
@@ -499,13 +550,13 @@ export function InventarioView({
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="min-h-[48px] flex-1 rounded-xl border border-border-subtle bg-background text-sm font-semibold text-foreground hover:bg-surface-muted"
+                  className="min-h-[48px] flex-1 rounded-xl border border-border-subtle bg-surface-muted text-sm font-bold text-foreground hover:bg-surface active:scale-[0.98]"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="min-h-[48px] flex-1 rounded-xl bg-emerald-pos text-sm font-bold text-white hover:opacity-95"
+                  className="min-h-[48px] flex-1 rounded-xl bg-emerald-600 text-sm font-extrabold text-white shadow-sm shadow-emerald-600/20 hover:bg-emerald-500 active:scale-[0.98]"
                 >
                   {editingId ? "Guardar Cambios" : "Crear Producto"}
                 </button>
