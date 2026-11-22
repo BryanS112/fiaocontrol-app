@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9;
+  --border-subtle: #e2e8f0;
+  --text-muted: #475569;
+  --accent-emerald: #059669;
+  --accent-amber: #d97706;
+  --accent-coral: #e11d48;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --surface: #18181b;
+    --surface-muted: #27272a;
+    --border-subtle: #27272a;
+    --text-muted: #a1a1aa;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-text-muted: var(--text-muted);
+  --color-emerald-pos: var(--accent-emerald);
+  --color-amber-pos: var(--accent-amber);
+  --color-coral-pos: var(--accent-coral);
+  --font-sans: var(--font-plus-jakarta), system-ui, -apple-system, sans-serif;
+}
+
+html,
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pos-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
