@@ -35,6 +35,7 @@ export interface ItemVenta {
   nombre: string;
   cantidad: number;
   precioUnitario: number;
+  costoUnitario?: number;
   subtotal: number;
 }
 

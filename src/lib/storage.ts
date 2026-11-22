@@ -1,6 +1,7 @@
 import type {
   AbonoFiado,
   ClienteFiado,
+  MetodoAbono,
   PosBackupData,
   Producto,
   StoreConfig,
@@ -22,6 +23,11 @@ export const DEFAULT_STORE_CONFIG: StoreConfig = {
 
 function isBrowser(): boolean {
   return typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+}
+
+function generateId(prefix: string): string {
+  const randomPart = Math.random().toString(36).slice(2, 7);
+  return `${prefix}-${Date.now()}-${randomPart}`;
 }
 
 function readFromStorage<T>(key: string, fallback: T): T {
@@ -70,6 +76,64 @@ export function saveProductos(productos: Producto[]): void {
   writeToStorage(STORAGE_KEYS.PRODUCTOS, productos);
 }
 
+export function crearProducto(data: Omit<Producto, 'id'>): Producto[] {
+  const productos = getProductos();
+  const nuevo: Producto = {
+    ...data,
+    id: generateId('prod'),
+    nombre: data.nombre.trim(),
+    categoria: data.categoria.trim() || 'Otros',
+    precioVenta: Math.max(0, Math.round(data.precioVenta)),
+    costo: Math.max(0, Math.round(data.costo)),
+    stock: Math.max(0, Math.round(data.stock)),
+    stockMinimo: Math.max(0, Math.round(data.stockMinimo)),
+  };
+  const actualizados = [nuevo, ...productos];
+  saveProductos(actualizados);
+  return actualizados;
+}
+
+export function actualizarProducto(
+  id: string,
+  patch: Partial<Omit<Producto, 'id'>>
+): Producto[] {
+  const productos = getProductos();
+  const actualizados = productos.map((p) => {
+    if (p.id !== id) return p;
+    return {
+      ...p,
+      ...patch,
+      nombre: patch.nombre !== undefined ? patch.nombre.trim() : p.nombre,
+      categoria: patch.categoria !== undefined ? patch.categoria.trim() || 'Otros' : p.categoria,
+      precioVenta:
+        patch.precioVenta !== undefined
+          ? Math.max(0, Math.round(patch.precioVenta))
+          : p.precioVenta,
+      costo: patch.costo !== undefined ? Math.max(0, Math.round(patch.costo)) : p.costo,
+      stock: patch.stock !== undefined ? Math.max(0, Math.round(patch.stock)) : p.stock,
+      stockMinimo:
+        patch.stockMinimo !== undefined
+          ? Math.max(0, Math.round(patch.stockMinimo))
+          : p.stockMinimo,
+    };
+  });
+  saveProductos(actualizados);
+  return actualizados;
+}
+
+export function reponerStockProducto(id: string, cantidadDelta: number): Producto[] {
+  const productos = getProductos();
+  const actualizados = productos.map((p) => {
+    if (p.id !== id) return p;
+    return {
+      ...p,
+      stock: Math.max(0, p.stock + Math.round(cantidadDelta)),
+    };
+  });
+  saveProductos(actualizados);
+  return actualizados;
+}
+
 // --- Clientes Fiados ---
 
 export function getClientesFiados(): ClienteFiado[] {
@@ -78,6 +142,23 @@ export function getClientesFiados(): ClienteFiado[] {
 
 export function saveClientesFiados(clientes: ClienteFiado[]): void {
   writeToStorage(STORAGE_KEYS.CLIENTES, clientes);
+}
+
+export function crearClienteFiado(
+  data: Omit<ClienteFiado, 'id' | 'saldoDeuda' | 'ultimaActividad'>
+): ClienteFiado[] {
+  const clientes = getClientesFiados();
+  const nuevo: ClienteFiado = {
+    id: generateId('cli'),
+    nombre: data.nombre.trim(),
+    telefono: data.telefono.replace(/\D/g, ''),
+    cupoMaximo: Math.max(0, Math.round(data.cupoMaximo)),
+    saldoDeuda: 0,
+    ultimaActividad: new Date().toISOString(),
+  };
+  const actualizados = [nuevo, ...clientes];
+  saveClientesFiados(actualizados);
+  return actualizados;
 }
 
 // --- Ventas ---
@@ -90,6 +171,124 @@ export function saveVentas(ventas: Venta[]): void {
   writeToStorage(STORAGE_KEYS.VENTAS, ventas);
 }
 
+export type RegistrarVentaInput = Omit<Venta, 'id' | 'fecha'>;
+
+export type RegistrarVentaResult =
+  | {
+      ok: true;
+      venta: Venta;
+      productos: Producto[];
+      clientes: ClienteFiado[];
+      ventas: Venta[];
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+export function registrarVenta(ventaData: RegistrarVentaInput): RegistrarVentaResult {
+  if (!ventaData.items || ventaData.items.length === 0) {
+    return { ok: false, error: 'El carrito está vacío.' };
+  }
+
+  const productos = getProductos();
+  const clientes = getClientesFiados();
+  const ventas = getVentas();
+
+  // Verificar stock disponible de cada ítem
+  for (const item of ventaData.items) {
+    const prod = productos.find((p) => p.id === item.productoId);
+    if (!prod) {
+      return { ok: false, error: `El producto "${item.nombre}" ya no existe.` };
+    }
+    if (item.cantidad <= 0) {
+      return { ok: false, error: `Cantidad inválida para "${item.nombre}".` };
+    }
+    if (prod.stock < item.cantidad) {
+      return {
+        ok: false,
+        error: `Stock insuficiente para "${prod.nombre}" (disponible: ${prod.stock}).`,
+      };
+    }
+  }
+
+  // Verificar cupo si es Fiado
+  if (ventaData.metodoPago === 'Fiado') {
+    if (!ventaData.clienteId) {
+      return { ok: false, error: 'Selecciona un cliente para registrar el fiado.' };
+    }
+    const cliente = clientes.find((c) => c.id === ventaData.clienteId);
+    if (!cliente) {
+      return { ok: false, error: 'Cliente de fiado no encontrado.' };
+    }
+    if (cliente.saldoDeuda + ventaData.total > cliente.cupoMaximo) {
+      return {
+        ok: false,
+        error: `El monto supera el cupo disponible de ${cliente.nombre}.`,
+      };
+    }
+  }
+
+  const ahoraIso = new Date().toISOString();
+
+  // Enriquecer costoUnitario para cálculo histórico de ganancia
+  const itemsConCosto = ventaData.items.map((item) => {
+    const prod = productos.find((p) => p.id === item.productoId);
+    return {
+      ...item,
+      costoUnitario: item.costoUnitario ?? prod?.costo ?? 0,
+    };
+  });
+
+  const nuevaVenta: Venta = {
+    id: generateId('vta'),
+    fecha: ahoraIso,
+    items: itemsConCosto,
+    total: Math.round(ventaData.total),
+    metodoPago: ventaData.metodoPago,
+    ...(ventaData.clienteId ? { clienteId: ventaData.clienteId } : {}),
+  };
+
+  // Descontar stock
+  const productosActualizados = productos.map((prod) => {
+    const vendido = itemsConCosto
+      .filter((i) => i.productoId === prod.id)
+      .reduce((acc, i) => acc + i.cantidad, 0);
+    if (vendido === 0) return prod;
+    return {
+      ...prod,
+      stock: Math.max(0, prod.stock - vendido),
+    };
+  });
+
+  // Actualizar deuda si es fiado
+  const clientesActualizados =
+    ventaData.metodoPago === 'Fiado' && ventaData.clienteId
+      ? clientes.map((cli) => {
+          if (cli.id !== ventaData.clienteId) return cli;
+          return {
+            ...cli,
+            saldoDeuda: cli.saldoDeuda + nuevaVenta.total,
+            ultimaActividad: ahoraIso,
+          };
+        })
+      : clientes;
+
+  const ventasActualizadas = [nuevaVenta, ...ventas];
+
+  saveProductos(productosActualizados);
+  saveClientesFiados(clientesActualizados);
+  saveVentas(ventasActualizadas);
+
+  return {
+    ok: true,
+    venta: nuevaVenta,
+    productos: productosActualizados,
+    clientes: clientesActualizados,
+    ventas: ventasActualizadas,
+  };
+}
+
 // --- Abonos de Fiados ---
 
 export function getAbonosFiados(): AbonoFiado[] {
@@ -98,6 +297,71 @@ export function getAbonosFiados(): AbonoFiado[] {
 
 export function saveAbonosFiados(abonos: AbonoFiado[]): void {
   writeToStorage(STORAGE_KEYS.ABONOS, abonos);
+}
+
+export type RegistrarAbonoResult =
+  | {
+      ok: true;
+      abono: AbonoFiado;
+      clientes: ClienteFiado[];
+      abonos: AbonoFiado[];
+    }
+  | {
+      ok: false;
+      error: string;
+    };
+
+export function registrarAbono(
+  clienteId: string,
+  monto: number,
+  metodoPago: MetodoAbono
+): RegistrarAbonoResult {
+  const montoLimpio = Math.round(monto);
+  if (!Number.isFinite(montoLimpio) || montoLimpio <= 0) {
+    return { ok: false, error: 'Ingresa un monto de abono válido mayor a $ 0.' };
+  }
+
+  const clientes = getClientesFiados();
+  const cliente = clientes.find((c) => c.id === clienteId);
+  if (!cliente) {
+    return { ok: false, error: 'Cliente no encontrado.' };
+  }
+
+  if (cliente.saldoDeuda <= 0) {
+    return { ok: false, error: 'Este cliente no tiene saldo pendiente.' };
+  }
+
+  const montoAplicado = Math.min(montoLimpio, cliente.saldoDeuda);
+  const ahoraIso = new Date().toISOString();
+
+  const nuevoAbono: AbonoFiado = {
+    id: generateId('abn'),
+    clienteId,
+    fecha: ahoraIso,
+    monto: montoAplicado,
+    metodoPago,
+  };
+
+  const clientesActualizados = clientes.map((cli) => {
+    if (cli.id !== clienteId) return cli;
+    return {
+      ...cli,
+      saldoDeuda: Math.max(0, cli.saldoDeuda - montoAplicado),
+      ultimaActividad: ahoraIso,
+    };
+  });
+
+  const abonosActualizados = [nuevoAbono, ...getAbonosFiados()];
+
+  saveClientesFiados(clientesActualizados);
+  saveAbonosFiados(abonosActualizados);
+
+  return {
+    ok: true,
+    abono: nuevoAbono,
+    clientes: clientesActualizados,
+    abonos: abonosActualizados,
+  };
 }
 
 // --- Respaldo JSON ---
@@ -243,7 +507,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
     {
       id: 'cli-dona-martha',
       nombre: 'Martha Lucía Gómez',
-      telefono: '310 458 9210',
+      telefono: '3104589210',
       cupoMaximo: 150000,
       saldoDeuda: 48500,
       ultimaActividad: hace2Horas,
@@ -251,7 +515,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
     {
       id: 'cli-don-carlos',
       nombre: 'Carlos Alberto Ruiz',
-      telefono: '320 812 3405',
+      telefono: '3208123405',
       cupoMaximo: 100000,
       saldoDeuda: 82000,
       ultimaActividad: ayer,
@@ -259,7 +523,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
     {
       id: 'cli-andrea-torres',
       nombre: 'Andrea Torres Mejía',
-      telefono: '315 639 7741',
+      telefono: '3156397741',
       cupoMaximo: 80000,
       saldoDeuda: 0,
       ultimaActividad: hace3Dias,
@@ -276,6 +540,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
           nombre: 'Arroz Diana x 1 kg',
           cantidad: 2,
           precioUnitario: 4800,
+          costoUnitario: 3900,
           subtotal: 9600,
         },
         {
@@ -283,6 +548,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
           nombre: 'Huevos AA Cubeta x 30',
           cantidad: 1,
           precioUnitario: 17500,
+          costoUnitario: 14800,
           subtotal: 17500,
         },
       ],
@@ -298,6 +564,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
           nombre: 'Aceite Gourmet x 1 L',
           cantidad: 1,
           precioUnitario: 13500,
+          costoUnitario: 11200,
           subtotal: 13500,
         },
         {
@@ -305,6 +572,7 @@ export function cargarDatosDemoColombia(): DemoDataResult {
           nombre: 'Leche Alquería Entera 1.1 L',
           cantidad: 2,
           precioUnitario: 5200,
+          costoUnitario: 4300,
           subtotal: 10400,
         },
       ],
