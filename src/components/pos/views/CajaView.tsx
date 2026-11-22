@@ -5,7 +5,9 @@ import {
   AlertCircle,
   Banknote,
   BookUser,
+  CheckCircle2,
   Database,
+  MessageCircle,
   Minus,
   Plus,
   Search,
@@ -25,11 +27,20 @@ import type {
 import type { ToastType } from "../ToastBanner";
 
 interface CajaViewProps {
+  nombreTienda: string;
   productos: Producto[];
   clientes: ClienteFiado[];
   onRegistrarVenta: (ventaData: RegistrarVentaInput) => { ok: boolean; error?: string };
   onCargarDemo: () => void;
   onNotify: (type: ToastType, text: string) => void;
+}
+
+interface ComprobanteVenta {
+  items: ItemVenta[];
+  total: number;
+  metodoPago: MetodoPago;
+  cambio: number | null;
+  clienteNombre?: string;
 }
 
 const METODOS_PAGO: { id: MetodoPago; label: string }[] = [
@@ -42,6 +53,7 @@ const METODOS_PAGO: { id: MetodoPago; label: string }[] = [
 const BILLETES_RAPIDOS = [10000, 20000, 50000, 100000];
 
 export function CajaView({
+  nombreTienda,
   productos,
   clientes,
   onRegistrarVenta,
@@ -55,6 +67,8 @@ export function CajaView({
   const [clienteId, setClienteId] = useState<string>("");
   const [efectivoRecibido, setEfectivoRecibido] = useState<string>("");
   const [mobileCartOpen, setMobileCartOpen] = useState(false);
+  const [comprobanteVenta, setComprobanteVenta] = useState<ComprobanteVenta | null>(null);
+  const [telefonoRecibo, setTelefonoRecibo] = useState("");
 
   const categorias = useMemo(() => {
     const set = new Set<string>();
@@ -204,6 +218,20 @@ export function CajaView({
       onNotify("error", result.error ?? "No se pudo registrar la venta.");
       return;
     }
+
+    const cambioCalculado =
+      metodoPago === "Efectivo" && montoRecibidoNum >= totalCarrito
+        ? cambioEfectivo
+        : null;
+
+    setComprobanteVenta({
+      items: [...carrito],
+      total: totalCarrito,
+      metodoPago,
+      cambio: cambioCalculado,
+      clienteNombre: clienteSeleccionado?.nombre,
+    });
+    setTelefonoRecibo(clienteSeleccionado?.telefono ?? "");
 
     onNotify(
       "success",
@@ -685,6 +713,115 @@ export function CajaView({
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">{renderCartContent()}</div>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Modal: Comprobante Rápido Post-Venta */}
+      {comprobanteVenta ? (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-comprobante-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+        >
+          <div className="pos-card w-full max-w-sm rounded-2xl p-5">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-pos/15 text-emerald-pos">
+                  <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <div>
+                  <h3 id="modal-comprobante-title" className="text-base font-bold text-foreground">
+                    Venta registrada
+                  </h3>
+                  <p className="text-xs text-text-muted">
+                    Pago con {comprobanteVenta.metodoPago}
+                    {comprobanteVenta.clienteNombre
+                      ? ` · ${comprobanteVenta.clienteNombre}`
+                      : ""}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setComprobanteVenta(null)}
+                aria-label="Cerrar comprobante"
+                className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg text-text-muted hover:bg-surface-muted active:scale-[0.98]"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-4 space-y-2 rounded-xl border border-border-subtle bg-background p-3.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-text-muted">Total cobrado</span>
+                <span className="tabular-nums text-xl font-bold text-foreground">
+                  {formatCOP(comprobanteVenta.total)}
+                </span>
+              </div>
+
+              {comprobanteVenta.cambio !== null ? (
+                <div className="flex items-center justify-between border-t border-border-subtle pt-2">
+                  <span className="text-xs font-medium text-text-muted">Cambio entregado</span>
+                  <span className="tabular-nums text-base font-bold text-emerald-pos">
+                    {formatCOP(comprobanteVenta.cambio)}
+                  </span>
+                </div>
+              ) : null}
+            </div>
+
+            <div className="mt-4 space-y-2">
+              <label
+                htmlFor="whatsapp-recibo-tel"
+                className="block text-xs font-semibold text-foreground"
+              >
+                Enviar recibo por WhatsApp (opcional)
+              </label>
+              <input
+                id="whatsapp-recibo-tel"
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={telefonoRecibo}
+                onChange={(e) => setTelefonoRecibo(e.target.value.replace(/\D/g, ""))}
+                placeholder="Celular 10 dígitos (ej: 3104589210)"
+                className="tabular-nums h-11 w-full rounded-lg border border-border-subtle bg-background px-3 text-sm text-foreground outline-none focus:border-emerald-pos"
+              />
+
+              {telefonoRecibo.length === 10 ? (
+                <a
+                  href={`https://wa.me/57${telefonoRecibo}?text=${encodeURIComponent(
+                    `*${nombreTienda}*\nComprobante de ${comprobanteVenta.metodoPago === "Fiado" ? "fiado" : "compra"}:\n${comprobanteVenta.items
+                      .map((i) => `• ${i.cantidad}x ${i.nombre}: ${formatCOP(i.subtotal)}`)
+                      .join("\n")}\n*Total: ${formatCOP(comprobanteVenta.total)}* (${comprobanteVenta.metodoPago})\n¡Gracias por tu compra!`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-emerald-pos bg-emerald-pos/10 px-4 text-sm font-bold text-emerald-pos transition-colors hover:bg-emerald-pos/15 active:scale-[0.98]"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  Enviar recibo por WhatsApp
+                </a>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className="flex min-h-[48px] w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl border border-border-subtle bg-surface-muted px-4 text-xs font-semibold text-text-muted"
+                >
+                  <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                  Ingresa 10 dígitos para enviar por WhatsApp
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setComprobanteVenta(null)}
+              className="mt-3 flex min-h-[48px] w-full cursor-pointer items-center justify-center rounded-xl bg-emerald-pos text-sm font-bold text-white hover:opacity-95 active:scale-[0.98]"
+            >
+              Listo, nueva venta
+            </button>
           </div>
         </div>
       ) : null}

@@ -14,12 +14,27 @@ export const metadata: Metadata = {
   description:
     "Sistema móvil-first de punto de venta, control de inventario y gestión de fiaos en pesos colombianos para tiendas de barrio y minimarkets.",
   applicationName: "FiaoControl POS",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "FiaoControl",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F8FAFC" },
     { media: "(prefers-color-scheme: dark)", color: "#09090B" },

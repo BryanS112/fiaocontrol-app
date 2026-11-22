@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { ArrowDownLeft, Calendar, Receipt } from "lucide-react";
+import { ArrowDownLeft, BarChart3, Calendar, Database, Receipt } from "lucide-react";
 import { formatCOP, formatFechaHora, formatHora } from "@/lib/formatters";
 import type { AbonoFiado, ClienteFiado, Producto, Venta } from "@/types/pos";
 
@@ -10,6 +10,7 @@ interface ResumenViewProps {
   clientes: ClienteFiado[];
   ventas: Venta[];
   abonos: AbonoFiado[];
+  onCargarDemo: () => void;
 }
 
 function getLocalDateInputValue(date = new Date()): string {
@@ -50,6 +51,7 @@ export function ResumenView({
   clientes,
   ventas,
   abonos,
+  onCargarDemo,
 }: ResumenViewProps) {
   const [fechaFiltro, setFechaFiltro] = useState<string>(() =>
     getLocalDateInputValue()
@@ -268,9 +270,29 @@ export function ResumenView({
         </div>
 
         {historialCronologico.length === 0 ? (
-          <p className="py-4 text-center text-sm text-text-muted">
-            No hay ventas ni abonos registrados para esta fecha.
-          </p>
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-surface-muted text-text-muted">
+              <BarChart3 className="h-5 w-5" aria-hidden="true" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">
+              Sin movimientos registrados
+            </p>
+            <p className="mt-1 max-w-sm text-xs text-text-muted">
+              {ventas.length === 0 && abonos.length === 0
+                ? "Registra tu primera venta en Caja o carga los datos de prueba para ver el cierre."
+                : "No hay ventas ni abonos para la fecha seleccionada."}
+            </p>
+            {ventas.length === 0 && abonos.length === 0 ? (
+              <button
+                type="button"
+                onClick={onCargarDemo}
+                className="mt-4 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-emerald-pos px-4 text-sm font-bold text-white transition-opacity hover:opacity-95 active:scale-[0.98]"
+              >
+                <Database className="h-4 w-4" aria-hidden="true" />
+                Cargar datos de prueba
+              </button>
+            ) : null}
+          </div>
         ) : (
           <ul className="divide-y divide-border-subtle">
             {historialCronologico.map((mov) => (

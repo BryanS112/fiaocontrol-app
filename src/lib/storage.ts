@@ -395,6 +395,133 @@ export function exportarRespaldoJSON(): PosBackupData {
   return backup;
 }
 
+export type ImportarRespaldoResult =
+  | { ok: true; data: PosBackupData }
+  | { ok: false; error: string };
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isValidProducto(item: unknown): item is Producto {
+  if (!isObjectRecord(item)) return false;
+  return (
+    typeof item.id === 'string' &&
+    typeof item.nombre === 'string' &&
+    typeof item.categoria === 'string' &&
+    typeof item.precioVenta === 'number' &&
+    Number.isFinite(item.precioVenta) &&
+    typeof item.costo === 'number' &&
+    Number.isFinite(item.costo) &&
+    typeof item.stock === 'number' &&
+    Number.isFinite(item.stock) &&
+    typeof item.stockMinimo === 'number' &&
+    Number.isFinite(item.stockMinimo)
+  );
+}
+
+function isValidCliente(item: unknown): item is ClienteFiado {
+  if (!isObjectRecord(item)) return false;
+  return (
+    typeof item.id === 'string' &&
+    typeof item.nombre === 'string' &&
+    typeof item.telefono === 'string' &&
+    typeof item.cupoMaximo === 'number' &&
+    Number.isFinite(item.cupoMaximo) &&
+    typeof item.saldoDeuda === 'number' &&
+    Number.isFinite(item.saldoDeuda) &&
+    typeof item.ultimaActividad === 'string'
+  );
+}
+
+function isValidVenta(item: unknown): item is Venta {
+  if (!isObjectRecord(item)) return false;
+  const metodosValidos = ['Efectivo', 'Nequi', 'Daviplata', 'Fiado'];
+  return (
+    typeof item.id === 'string' &&
+    typeof item.fecha === 'string' &&
+    Array.isArray(item.items) &&
+    typeof item.total === 'number' &&
+    Number.isFinite(item.total) &&
+    typeof item.metodoPago === 'string' &&
+    metodosValidos.includes(item.metodoPago)
+  );
+}
+
+function isValidAbono(item: unknown): item is AbonoFiado {
+  if (!isObjectRecord(item)) return false;
+  const metodosValidos = ['Efectivo', 'Nequi', 'Daviplata'];
+  return (
+    typeof item.id === 'string' &&
+    typeof item.clienteId === 'string' &&
+    typeof item.fecha === 'string' &&
+    typeof item.monto === 'number' &&
+    Number.isFinite(item.monto) &&
+    typeof item.metodoPago === 'string' &&
+    metodosValidos.includes(item.metodoPago)
+  );
+}
+
+export function importarRespaldoJSON(contenidoTexto: string): ImportarRespaldoResult {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(contenidoTexto);
+  } catch {
+    return { ok: false, error: 'El archivo no es un JSON válido.' };
+  }
+
+  if (!isObjectRecord(parsed)) {
+    return { ok: false, error: 'Estructura de respaldo inválida.' };
+  }
+
+  const { config, productos, clientes, ventas, abonos } = parsed;
+
+  if (!isObjectRecord(config) || typeof config.nombreTienda !== 'string') {
+    return { ok: false, error: 'Falta la configuración válida de la tienda (config).' };
+  }
+  if (!Array.isArray(productos) || !productos.every(isValidProducto)) {
+    return { ok: false, error: 'La lista de productos en el respaldo es inválida.' };
+  }
+  if (!Array.isArray(clientes) || !clientes.every(isValidCliente)) {
+    return { ok: false, error: 'La lista de clientes en el respaldo es inválida.' };
+  }
+  if (!Array.isArray(ventas) || !ventas.every(isValidVenta)) {
+    return { ok: false, error: 'La lista de ventas en el respaldo es inválida.' };
+  }
+  if (!Array.isArray(abonos) || !abonos.every(isValidAbono)) {
+    return { ok: false, error: 'La lista de abonos en el respaldo es inválida.' };
+  }
+
+  const validatedConfig: StoreConfig = {
+    nombreTienda: config.nombreTienda.trim() || DEFAULT_STORE_CONFIG.nombreTienda,
+    actualizadoEn:
+      typeof config.actualizadoEn === 'string'
+        ? config.actualizadoEn
+        : new Date().toISOString(),
+  };
+
+  const backupData: PosBackupData = {
+    version: typeof parsed.version === 'number' ? parsed.version : 1,
+    exportadoEn:
+      typeof parsed.exportadoEn === 'string'
+        ? parsed.exportadoEn
+        : new Date().toISOString(),
+    config: validatedConfig,
+    productos,
+    clientes,
+    ventas,
+    abonos,
+  };
+
+  saveStoreConfig(validatedConfig);
+  saveProductos(productos);
+  saveClientesFiados(clientes);
+  saveVentas(ventas);
+  saveAbonosFiados(abonos);
+
+  return { ok: true, data: backupData };
+}
+
 // --- Datos Demo Colombia ---
 
 export interface DemoDataResult {

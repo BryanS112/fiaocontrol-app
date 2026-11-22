@@ -13,6 +13,7 @@ import {
   getProductos,
   getStoreConfig,
   getVentas,
+  importarRespaldoJSON,
   registrarAbono,
   registrarVenta,
   reponerStockProducto,
@@ -104,6 +105,24 @@ export function AppShell() {
     notify("success", "Respaldo JSON descargado.");
   };
 
+  const handleImportarRespaldo = (contenidoTexto: string) => {
+    const result = importarRespaldoJSON(contenidoTexto);
+    if (!result.ok) {
+      notify("error", result.error);
+      return;
+    }
+    setNombreTienda(result.data.config.nombreTienda);
+    setProductos(result.data.productos);
+    setClientes(result.data.clientes);
+    setVentas(result.data.ventas);
+    setAbonos(result.data.abonos);
+    showHeaderStatus("Respaldo restaurado");
+    notify(
+      "success",
+      `Respaldo importado (${result.data.productos.length} productos, ${result.data.clientes.length} clientes).`
+    );
+  };
+
   // --- Transacciones reactivas sincronizadas ---
 
   const handleRegistrarVenta = (ventaData: RegistrarVentaInput) => {
@@ -168,6 +187,7 @@ export function AppShell() {
         onSaveNombreTienda={handleSaveNombreTienda}
         onCargarDemo={handleCargarDemo}
         onExportarRespaldo={handleExportarRespaldo}
+        onImportarRespaldo={handleImportarRespaldo}
         statusMessage={statusMessage}
       />
 
@@ -184,6 +204,7 @@ export function AppShell() {
         <main className="min-w-0 flex-1 px-3 py-4 pb-36 sm:px-6 md:pb-8">
           {activeSection === "caja" && (
             <CajaView
+              nombreTienda={nombreTienda}
               productos={productos}
               clientes={clientes}
               onRegistrarVenta={handleRegistrarVenta}
@@ -218,6 +239,7 @@ export function AppShell() {
               clientes={clientes}
               ventas={ventas}
               abonos={abonos}
+              onCargarDemo={handleCargarDemo}
             />
           )}
         </main>
